@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from config.db import conn
 from models.index import users
-from schemas.index import User
+from schemas.index import User, UserUpdate
 
 user_router = APIRouter()
 
@@ -30,13 +30,11 @@ def write_data(user: User):  # Removed 'async'
 
 
 @user_router.put("/{id}")
-def update_data(id: int, user: User):  # Removed 'async'
-    conn.execute(
-        users.update()
-        .values(name=user.name, email=user.email, password=user.password)
-        .where(users.c.id == id)
-    )
-    conn.commit()
+def update_data(id: int, user: UserUpdate):  # Removed 'async'
+    update_values = user.model_dump(exclude_unset=True)
+    if update_values:
+        conn.execute(users.update().values(**update_values).where(users.c.id == id))
+        conn.commit()
     result = conn.execute(users.select()).fetchall()
     return [row._mapping for row in result]
 
